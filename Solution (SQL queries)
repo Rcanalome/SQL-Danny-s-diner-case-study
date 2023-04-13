@@ -1,0 +1,131 @@
+# Sol 1 :
+
+select sales.customer_id, sum(menu.price)
+from dannys_diner.sales inner join dannys_diner.menu on sales.product_id = menu.product_id
+group by customer_id
+order by sum(menu.price);
+
+
+
+# Sol 2 :
+
+select customer_id, count (distinct(order_date))
+from dannys_diner.sales
+group by customer_id;
+
+
+
+# Sol 3 :
+
+(select customer_id, product_name , dense_rank()
+over(partition by customer_id order by order_date asc) as new
+from dannys_diner.sales inner join dannys_diner.menu on
+sales.product_id = menu.product_id) a
+where new = 1;
+
+
+
+# Sol 4 :
+
+select product_name, count(sales.product_id)
+from dannys_diner.sales inner join dannys_diner.menu on
+sales.product_id = menu.product_id
+group by product_name
+order by count(sales.product_id) desc limit 1;
+
+
+# Sol 5 :
+
+select * from
+(select customer_id, product_name, count(sales.product_id), dense_rank()
+over(partition by customer_id order by
+count(sales.product_id) desc) as new
+from dannys_diner.sales inner join dannys_diner.menu on
+sales.product_id = menu.product_id
+group by customer_id, product_name) as a
+where new = 1;
+
+
+
+# Sol 6 :
+
+select * from
+(select sales.customer_id, join_date, order_date,
+menu.product_name,
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) as daycount, dense_rank()
+over(partition by sales.customer_id order by
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date)
+asc) as new
+from  dannys_diner.sales inner join dannys_diner.members on
+sales.customer_id = members.customer_id
+inner join dannys_diner.menu on
+sales.product_id = menu.product_id
+where
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) >= 0)
+as a
+where new = 1;
+
+
+
+# Sol 7:
+
+select * from
+(select sales.customer_id, join_date, order_date,
+menu.product_name,
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) as daycount, dense_rank()
+over(partition by sales.customer_id order by
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date)
+desc) as new
+from  dannys_diner.sales inner join dannys_diner.members on
+sales.customer_id = members.customer_id
+inner join dannys_diner.menu on
+sales.product_id = menu.product_id
+where
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) < 0) as a
+where new = 1;
+
+
+
+
+# Sol 8:
+
+select sales.customer_id, count(menu.product_id), sum(menu.price)
+from
+dannys_diner.sales inner join dannys_diner.members on
+sales.customer_id = members.customer_id
+inner join dannys_diner.menu on
+sales.product_id = menu.product_id
+where
+DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) < 0
+group by sales.customer_id;
+
+
+
+
+# Sol 9:
+
+select customer_id,
+sum (case
+when product_name = 'sushi' then 20*(price)
+else 10*price
+end) as points_collected
+from dannys_diner.sales inner join dannys_diner.menu
+on sales.product_id = menu.product_id
+group by customer_id;
+
+
+
+
+
+# Sol 10 :
+
+select members.customer_id,
+sum(case
+when DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) between
+0 and 7    then 20*(price)
+when DATE_PART('day', order_date::date) - DATE_PART('day', join_date::date) > 7 then 10*(price)    
+end) as points_collected
+from dannys_diner.sales inner join dannys_diner.members
+on sales.customer_id = members.customer_id inner join dannys_diner.menu
+on sales.product_id = menu.product_id
+group by members.customer_id;
